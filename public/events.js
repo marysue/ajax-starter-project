@@ -1,7 +1,8 @@
 let commentNumber = 0;
 
-window.addEventListener("DOMContentLoaded", (event) => {
-    event.preventDefault();
+function getKittenImage() {
+    let loader = document.querySelector('div');
+    loader.innerHTML = 'loading...';
     fetch("/kitten/image")
         .then(res => {
             if (!res.ok) {
@@ -11,30 +12,36 @@ window.addEventListener("DOMContentLoaded", (event) => {
         .then((data) => {
             let imgElt = document.querySelector('img');
             imgElt.setAttribute("src", data.src);
+            loader.innerHTML = ' ';
         })
         .catch(error => {
             error.json().then((res) => alert(res.message));
         });
+}
+window.addEventListener("DOMContentLoaded", (event) => {
+    event.preventDefault();
+    getKittenImage();
+
+    // const wrapper = document.getElementById('comments');
+    // wrapper.addEventListener('click', (event) => {
+    //     console.log("event.target.nodeName = ", event.target.nodeName);
+    //    const isButton = event.target.nodeName === 'BUTTON';
+    //    if (!isButton || !<check button is in our comment area >) {
+    //      return;
+    //    }
+
+    // });
+
+    // set an event listener to the button
+    // get the event.target.parentid
+    // await deleteComment(event.target.parentid)
+    // resetCommentIds(event.target.parentid)
 
     document.getElementById('new-pic').addEventListener('click', () => {
-        // clearComments();
-        let loader = document.querySelector('div');
-        loader.innerHTML = 'loading...';
-
-        fetch("/kitten/image")
-            .then(res => {
-                if (!res.ok) {
-                    throw res;
-                } return res.json()
-            })
-            .then((data) => {
-                loader.innerHTML = '';
-                let imgElt = document.querySelector('img');
-                imgElt.setAttribute("src", data.src);
-            })
-            .catch(error => {
-                error.json().then((res) => alert(res.message));
-            });
+        clearComments();
+        getKittenImage();
+        let score = document.getElementsByClassName('score');
+        score[0].innerHTML = 0;
     });
 
     document.getElementById('upvote').addEventListener('click', () => {
@@ -80,25 +87,28 @@ window.addEventListener("DOMContentLoaded", (event) => {
         let comment = document.getElementById('user-comment');
         let newComment = document.createElement('div');
         newComment.innerHTML = comment.value;
-        newComment.setAttribute('class', commentNumber);
+        newComment.setAttribute('id', commentNumber);
         let newButton = document.createElement('button');
         newButton.innerHTML = 'Delete';
         commentNumber++;
         newComment.appendChild(newButton);
-        let commentsDiv = document.getElementsByClassName('comments');
-        commentsDiv[0].appendChild(newComment);
+        let commentsDiv = document.getElementById('comments');
+        commentsDiv.appendChild(newComment);
         comment.value = '';
     })
 });
 
 function clearComments() {
-    let divClassComments = document.getElementsByClassName('comments');
-    for(let i = 0; i <= commentNumber; i++) {
+    let divClassComments = document.getElementById('comments');
+    console.log("divClassComment: ", divClassComments);
+    for(let i = 0; i < commentNumber; i++) {
+        console.log("     Clearing comment #", i);
         // remove the comment div
-        let commentDiv = document.getElementsByClassName(`${i}`);
-        divClassComments[0].removeChild(commentDiv);
+        let commentDiv = document.getElementById(`${i}`);
+        console.log("     commentDiv = ", commentDiv);
+        divClassComments.removeChild(commentDiv);
         // call 'delete on the comment number'
-        fetch(`/kitten/comments/${i}`,
+        fetch(`/kitten/comments/:${i}`,
             {method: "DELETE"})
             .then((res) => {
                 if (!res.ok) throw res.status;
@@ -110,4 +120,24 @@ function clearComments() {
     }
     // set comment number = 0
     commentNumber = 0;
+}
+
+
+async function deleteComment(id) {
+    fetch(`/kitten/comments/:${id}`,
+            {method: "DELETE"})
+            .then((res) => {
+                if (!res.ok) throw res.status;
+            })
+            .catch(err => {
+                alert(err);
+            })
+}
+
+function resetCommentIds(delId) {
+    for (let i = delId +1 ; i < commentNumber; i++)
+    {
+        let thisComment = document.getElementById(`${i}`);
+        thisComment.setAttribute("id", `${i - 1}`);
+    }
 }
